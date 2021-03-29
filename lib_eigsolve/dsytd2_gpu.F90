@@ -72,7 +72,7 @@ module dsytd2_gpu
 
         if(tl==1) then
           w = a_s_1(tl,i+1)
-          !print*, " ",w
+          print*, " ",w
           alpha=a_s(i,i+1)
           alphar=dble(alpha)
           xnorm=dsqrt(w)
@@ -148,7 +148,7 @@ module dsytd2_gpu
               stride = stride*2
             end do
             x = a_s_1(1,i+1)
-            print*,x
+            !print*,x
           end if
             ! z=__shfl_xor(x,1)
             ! x=x+z

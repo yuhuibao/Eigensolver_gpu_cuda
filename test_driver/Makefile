@@ -1,5 +1,4 @@
-CUDAROOT = ${CUDA_HOME}
-MKLROOT = /opt/intel/mkl
+CUDAROOT = /opt/nvidia/hpc_sdk/Linux_x86_64/20.11/cuda/10.2
 
 # Flags for GPUs with Volta architecture.  Modify cc value as required.
 FLAGS = -O3 -mp -pgf90libs -Mcuda=cc70,cuda10.2 -Mlarge_arrays
@@ -15,18 +14,18 @@ else
 endif
 
 INCS = -I../lib_eigsolve 
-LIBS = -Mcudalib=cublas,cusolver -L${CUDAROOT}/lib64 -lnvToolsExt
+LIBS = -Mcudalib=cublas,cusolver -L${CUDAROOT}/lib64 -llapack -lblas -lnvToolsExt
 LIBS += ../lib_eigsolve/lib_eigsolve.a
 
 # Populate this section for your LAPACK installation. Default here is for MKL.
-LAPACKROOT = ${MKLROOT}
-INCS += -I${LAPACKROOT}/include
-LIBS += -L${LAPACKROOT}/lib/intel64 -lmkl_intel_lp64 -lmkl_core -l${MKL_THREAD} -pgf90libs -lpthread -lm -ldl
+#LAPACKROOT = ${MKLROOT}
+#INCS += -I${LAPACKROOT}/include
+#LIBS += -L${LAPACKROOT}/lib/intel64 -lmkl_intel_lp64 -lmkl_core -l${MKL_THREAD} -pgf90libs -lpthread -lm -ldl
 
 # To enable comparison with MAGMA, uncomment and/or populate the following lines:
-INCS += -I${MAGMAROOT}/include
-LIBS += -L${MAGMAROOT}/lib -lmagma
-OPTFLAGS += -DHAVE_MAGMA
+#INCS += -I${MAGMAROOT}/include
+#LIBS += -L${MAGMAROOT}/lib -lmagma
+#OPTFLAGS += -DHAVE_MAGMA
 
 all: test_zhegvdx test_dsygvdx
 
@@ -37,8 +36,8 @@ test_zhegvdx: test_zhegvdx.F90
 
 test_dsygvdx: test_dsygvdx.F90 
 	pgcc -c wallclock.c
-	pgf90 -c ${FLAGS} toolbox.F90
-	pgf90 -o test_dsygvdx test_dsygvdx.F90 toolbox.o wallclock.o ${LIBS} ${FLAGS} ${OPTFLAGS} -pgf90libs ${INCS}
+	pgf90 -c ${FLAGS} toolbox.F90 utils.F90
+	pgf90 -o test_dsygvdx test_dsygvdx.F90 toolbox.o wallclock.o utils.o ${LIBS} ${FLAGS} ${OPTFLAGS} -pgf90libs ${INCS}
 
 clean:
 	rm test_zhegvdx test_dsygvdx *.mod *.o

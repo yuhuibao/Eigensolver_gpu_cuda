@@ -22,18 +22,21 @@
 !
 
 module funcs
+
   contains
 
   ! Creates pseudo-random positive-definite symmetric matrix
   subroutine create_random_symmetric_pd(A, N)
     use cudafor
     use cublas
+    use utils
     real(8), allocatable, dimension(:,:)         :: A, temp
     real(8), allocatable, dimension(:,:), device :: A_d, temp_d
     real(8)                                         :: rv
     integer                                         :: i, j, N
 
     allocate(A(N,N))
+    
     allocate(temp(N,N))
 
     ! Create general symmetric temp
@@ -49,9 +52,9 @@ module funcs
         end if
       end do
     end do
-
     allocate(A_d, source = A)
     allocate(temp_d, source = temp)
+    temp=temp_d
 
     ! Multiply temp by transpose of temp to get positive definite A
     call cublasdgemm('N', 'T', N, N, N, 1.d0, temp_d, N, temp_d, N, 0.d0, A_d, N)
@@ -62,24 +65,7 @@ module funcs
     deallocate(temp_d)
         
   end subroutine
-  ! Print arrary(vector or matrix)
-  subroutine print_matrix(A,N)
-    integer :: N
-    real(8) :: A(N,N)
-    do j = 1,N
-      do i = 1,N
-        print*, " ",A(i,j)
-      end do
-      print*, "\n"
-    end do
-  end subroutine
-  subroutine print_vector(A,N)
-    integer :: N
-    integer :: A(N)
-    do j = 1,N
-      print*, " ",A(j)
-    end do
-  end subroutine
+  
 end module funcs
 
 ! cusovlerDnDsygvdx was added in CUDA 10.1
@@ -97,6 +83,7 @@ program main
   use nvtx_inters
   use funcs
   use compare_utils
+  use utils
   implicit none
   
   integer                                         :: N, M, i, j, info, lda, istat
@@ -134,6 +121,7 @@ program main
     ! Create random positive-definite hermetian matrices on host
     call create_random_symmetric_pd(Aref, N)
     call create_random_symmetric_pd(Bref, N)
+    
 
   elseif (i ==2) then
     print*, "Reading  matrices from files ..."
@@ -143,10 +131,11 @@ program main
     file1=trim(arg)
     call get_command_argument(2, arg)
     file2=trim(arg)
-    open(UNIT=13, FILE=file1, ACTION="read", FORM="unformatted")
-    open(UNIT=14, FILE=file2, ACTION="read", FORM="unformatted")
-    read(13) n1,m1,lda1
-    read(14) n2,m2,lda2
+    open(UNIT=13, FILE=file1, ACTION="read")
+    open(UNIT=14, FILE=file2, ACTION="read")
+    read(13,*) n1,m1,lda1
+    read(14,*) n2,m2,lda2
+    print *,n1,m1,lda1,n2,m2,lda2
     if( n1/=n2 .or. m1/=m2 .or. lda1 /= lda2) then
       print *,"expecting A and B to have same N,M,LDA"
       call exit
@@ -155,18 +144,21 @@ program main
     M=m1
     LDA=lda1
     print *,"n,m,lda from files:",n,m,lda
-    allocate(Aref(lda,N))
-    allocate(Bref(lda,N))
-    read(13)Aref(1:n,1:n)
-    read(14)Bref(1:n,1:n)
+    allocate(Aref(n,m))
+    allocate(Bref(n,m))
+    read(13,*)Aref(1:n,1:n)
+    read(14,*)Bref(1:n,1:n)
     close(13)
     close(14)
+    !call print_matrix(Aref)
+    !call print_matrix(Bref)
+
   else
     print*, "Usage:\n\t ./main [N]"
     call exit
   endif
 
-  print*, "Running with N = ", N
+  print*, "Running with N = ", N,M
 
   ! Allocate/Copy matrices to device
   allocate(A1, source = Aref)
@@ -264,7 +256,7 @@ program main
 #ifdef HAVE_CUSOLVERDNDSYGVDX
   print *,"CUSOLVERDNDSYGVDX"
   il = 1
-  iu = M
+  iu = N
   istat = cusolverDnDsygvdx_bufferSize(h, CUSOLVER_EIG_TYPE_1, CUSOLVER_EIG_MODE_VECTOR, CUSOLVER_EIG_RANGE_I, CUBLAS_FILL_MODE_UPPER, N, A2_d, lda, B2_d, lda, 0.D0, 0.D0, il, iu, h_meig, w2_d, lwork_d)
   if (istat /= CUSOLVER_STATUS_SUCCESS) write(*,*) 'cusolverDnDsygvdx_buffersize failed'
 #else
@@ -290,8 +282,6 @@ program main
   te = wallclock()
 
   print*, "evalues/evector accuracy: (compared to CPU results)"
-  w2 = w2_d
-  A2 = A2_d
   call compare(w1, w2, iu)
   call compare(A1, A2, N, iu)
   print*
@@ -320,7 +310,7 @@ program main
   B2_d = B2
   w2_d = w2
   il = 1
-  iu = M
+  iu = N
 
   deallocate(work, iwork)
   lwork = 1+6*N+2*N*N
@@ -338,7 +328,12 @@ program main
   call nvtxEndRange
   te = wallclock()
 
-  print*, "evalues/evector accuracy: (compared to CPU results)"
+  print*, "evalues/evector accuracy: (compared to CPU results)",iu
+  ! call print_matrix(A1)
+  ! call print_matrix(Z2)
+
+  ! call print_vector(w1)
+  ! call print_vector(w2)
   call compare(w1, w2, iu)
   call compare(A1, Z2, N, iu)
   print*
