@@ -43,12 +43,14 @@ module funcs
     do j = 1, N
       do i = 1, N
         if (i > j) then
-          call random_number(rv)
-          temp(i,j) = rv
-          temp(j,i) = rv
+          ! call random_number(rv)
+          ! temp(i,j) = rv
+          ! temp(j,i) = rv
+          temp(i, j) = i
+          temp(j, i) = i
         else if (i == j) then
-          call random_number(rv)
-          temp(i,j) = rv
+          ! call random_number(rv)
+          temp(i,j) = i*2
         end if
       end do
     end do

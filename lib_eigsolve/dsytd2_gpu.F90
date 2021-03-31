@@ -27,7 +27,8 @@ module dsytd2_gpu
          a_s(tx           ,ty           )=a(tx           ,ty)
       endif
 
-       call syncthreads()
+      call syncthreads()
+
       ! Symmetric matrix from upper triangular
       if (tx >ty) then
          a_s(tx,ty)=a_s(ty,tx)
@@ -196,7 +197,6 @@ module dsytd2_gpu
       if (tl==1) then
         d(1) = a_s(1,1)
       endif
-
 
       call syncthreads()
 

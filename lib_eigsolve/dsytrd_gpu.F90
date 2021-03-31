@@ -24,6 +24,7 @@
 module dsytrd_gpu
   use cudafor
   use cublas
+  use utils
 
   contains
   
@@ -38,9 +39,11 @@ module dsytrd_gpu
       real(8), dimension(1:N-1), device         :: e
       real(8), dimension(1:lwork), device       :: work
       real(8), dimension(1:lda, 1:N), device    :: A
+      real(8), dimension(1:lda, 1:N)            :: A_h
       real(8), dimension(1:N-1), device         :: tau
       real(8), parameter                        :: one = 1.0_8
       type(dim3)                                :: threads
+
 
       if (uplo .ne. 'U') then
         print*, "Provided uplo type not supported!"
@@ -54,36 +57,44 @@ module dsytrd_gpu
 
       ldwork = N
 
+      print*, "ldwork", ldwork
+
       istat = cublasSetStream(cuHandle, stream1)
 
-      kk = N-((N-32) / nb) * nb
-      k = N+1
-      do i = N-nb+1, kk+1, -nb
-        ! Reduce columns i:i+nb-1 to tridiagonal form 
-        call dlatrd_gpu(uplo, i+nb-1, nb, A, lda, e, tau, work, ldwork)
+      ! kk = N-((N-32) / nb) * nb
+      ! k = N+1
+      ! do i = N-nb+1, kk+1, -nb
+      !   ! Reduce columns i:i+nb-1 to tridiagonal form 
+      !   call dlatrd_gpu(uplo, i+nb-1, nb, A, lda, e, tau, work, ldwork)
 
-        ! Update trailing submatrix
-        call cublasdsyr2k(uplo, 'N', i-1, nb, -one, A(1, i), lda, work, ldwork, one, a, lda)
+      !   ! Update trailing submatrix
+      !   call cublasdsyr2k(uplo, 'N', i-1, nb, -one, A(1, i), lda, work, ldwork, one, a, lda)
 
-        k = k - nb
+      !   k = k - nb
 
-      end do
+      ! end do
       
-      ! Finish any remaining columns to get final 32x32 block
-      nb = k - 32 - 1
-      i = k - nb
+      ! ! Finish any remaining columns to get final 32x32 block
+      ! nb = k - 32 - 1
+      ! i = k - nb
       
-      if (nb > 0) then
-        ! Reduce columns i:i+nb-1 to tridiagonal form 
-        call dlatrd_gpu(uplo, i+nb-1, nb, A, lda, e, tau, work, ldwork)
+      ! if (nb > 0) then
+      !   ! Reduce columns i:i+nb-1 to tridiagonal form 
+      !   call dlatrd_gpu(uplo, i+nb-1, nb, A, lda, e, tau, work, ldwork)
 
-        ! Update trailing submatrix
-        call cublasdsyr2k(uplo, 'N', i-1, nb, -one, A(1, i), lda, work, ldwork, one, a, lda)
-      endif
+      !   ! Update trailing submatrix
+      !   call cublasdsyr2k(uplo, 'N', i-1, nb, -one, A(1, i), lda, work, ldwork, one, a, lda)
+      ! endif
 
       ! Final block
+      A_h = A
+      call print_matrix(A_h)
+
       threads = dim3(32, 32, 1)
       call dsytd2_gpu<<<1, threads>>>(min(32, N), A, lda, d, e, tau)
+
+      A_h = A
+      call print_matrix(A_h)
 
       ! Copy superdiagonal back into A, store diagonal in d
       !$cuf kernel do(1) <<<*,*>>>
