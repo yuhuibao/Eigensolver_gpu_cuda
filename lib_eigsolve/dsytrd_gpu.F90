@@ -31,6 +31,7 @@ module dsytrd_gpu
     subroutine dsytrd_gpu(uplo, N, A, lda, d, e, tau, work, lwork, nb)
       use eigsolve_vars
       use dsytd2_gpu
+      use dsytd2_gpu0
       implicit none
       character                                 :: uplo
       integer                                   :: N, lda, lwork, nb, nx, ldwork, istat
@@ -91,7 +92,9 @@ module dsytrd_gpu
       call print_matrix(A_h)
 
       threads = dim3(32, 32, 1)
+      
       call dsytd2_gpu<<<1, threads>>>(min(32, N), A, lda, d, e, tau)
+      !call dsytd2_gpu0<<<1, threads>>>(min(32, N), A, lda, d, e, tau)
 
       A_h = A
       call print_matrix(A_h)

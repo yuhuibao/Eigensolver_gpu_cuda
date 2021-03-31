@@ -26,19 +26,17 @@ module dsytd2_gpu
       if (tx <= N .and. ty <= N) then
          a_s(tx           ,ty           )=a(tx           ,ty)
       endif
-
       call syncthreads()
 
       ! Symmetric matrix from upper triangular
       if (tx >ty) then
          a_s(tx,ty)=a_s(ty,tx)
       end if
-
-
       call syncthreads()
 
       ! For each column working backward
-      do i=n-1,1,-1
+      ! do i=n-1,1,-1
+      do i = n-1, 1, -1
         ! Generate elementary reflector
         ! Sum the vectors above the diagonal, only one warp active
         ! Reduce in a warp
@@ -50,30 +48,43 @@ module dsytd2_gpu
           endif
         end if
         call syncthreads()
-          !  xnorm=__shfl_down(w,1)
-          !  w=w+xnorm
-          !  xnorm=__shfl_down(w,2)
-          !  w=w+xnorm
-          !  xnorm=__shfl_down(w,4)
-          !  w=w+xnorm
-          !  xnorm=__shfl_down(w,8)
-          !  w=w+xnorm
-          !  xnorm=__shfl_down(w,16)
-          !  w=w+xnorm
-        if(tl <= 32) then
-          stride=2
-          do while (stride<=32)
-            if (mod(tl-1, stride) == 0) then
-              a_s_1(tl,i+1) = a_s_1(tl,i+1) + a_s_1(tl+stride/2, i+1)
-            end if
-            call syncthreads()
-            stride = 2*stride
-          end do
-        end if
+        !   !  xnorm=__shfl_down(w,1)
+        !   !  w=w+xnorm
+        !   !  xnorm=__shfl_down(w,2)
+        !   !  w=w+xnorm
+        !   !  xnorm=__shfl_down(w,4)
+        !   !  w=w+xnorm
+        !   !  xnorm=__shfl_down(w,8)
+        !   !  w=w+xnorm
+        !   !  xnorm=__shfl_down(w,16)
+        !   !  w=w+xnorm
+
+        stride=2
+        do while (stride <= 32)
+          if (tl <= 32 .and. mod(tl-1, stride)==0) then 
+            a_s_1(tl,i+1) = a_s_1(tl,i+1) + a_s_1(tl+stride/2, i+1)
+          endif 
+          stride = 2*stride
+          call syncthreads()
+        end do
+
+        ! if(tl <= 32) then
+        !   stride=2
+        !   do while (stride<=32)
+        !     if (mod(tl-1, stride) == 0) then
+        !       a_s_1(tl,i+1) = a_s_1(tl,i+1) + a_s_1(tl+stride/2, i+1)
+        !     end if
+        !     call syncthreads()
+        !     stride = 2*stride
+        !   end do
+        ! end if
+        ! call syncthreads()
+
+        print*, "75: taui when tx=",tx,",ty=",ty, taui
 
         if(tl==1) then
           w = a_s_1(tl,i+1)
-          print*, " ",w
+          print*, "w= ",w
           alpha=a_s(i,i+1)
           alphar=dble(alpha)
           xnorm=dsqrt(w)
@@ -103,6 +114,8 @@ module dsytd2_gpu
 
         call syncthreads()
 
+        print*, "109: taui when tx=",tx,",ty=",ty, taui
+
         ! dscal
         if (tl<i) then
           a_s(tl,i+1)=a_s(tl,i+1)*alpha
@@ -118,6 +131,8 @@ module dsytd2_gpu
           e(i)=alpha
         end if
 
+        print*, "121: taui when tx=",tx,",ty=",ty, taui
+
         if(taui.ne.(0.d0,0.d0)) then
           a_s(i,i+1)=1.d0
           call syncthreads()
@@ -126,6 +141,7 @@ module dsytd2_gpu
             do j=1,i
               tau(tl)=tau(tl)+taui*a_s(tl,j)*a_s(j,i+1)
             end do
+            print*, "tau(tl)=", tau(tl)
           end if
 
           call syncthreads()
@@ -133,12 +149,13 @@ module dsytd2_gpu
           if (tl <=32) then
             if (tl <=i) then
               a_s_1(tl,i+1)=-.5d0*taui*tau(tl)*a_s(tl,i+1)
+              print*,a_s_1(tl,i+1)
             else
               a_s_1(tl,i+1)=0._8
             endif
           end if
-
           call syncthreads() 
+
           if (tl <=32) then
             stride=2
             do while(stride<=32)
@@ -171,14 +188,18 @@ module dsytd2_gpu
 
           if (tl <=i) then
             tau(tl)=tau(tl)+x*a_s(tl,i+1)
+            !print*,tau(tl)
           end if
 
-          if( tl==1) alpha=x
+          if(tl==1) alpha=x
 
           call syncthreads()
 
-          if( tx<=i .and. ty<=i) then
-            a_s(tx,ty)=a_s(tx,ty)-a_s(tx,i+1)*tau(ty)-a_s(ty,i+1)*tau(tx)
+          print*, "Before Check i=", i
+          if(tx<=i .and. ty<=i) then
+            print*, "check:", tx, ty, a_s(tx,ty)
+            ! a_s(tx,i+1),tau(ty),a_s(ty,i+1),tau(tx)
+            ! a_s(tx,ty)=a_s(tx,ty)-a_s(tx,i+1)*tau(ty)-a_s(ty,i+1)*tau(tx)
           end if
           call syncthreads()
 
@@ -202,6 +223,8 @@ module dsytd2_gpu
 
       ! Back to device memory
       if (tx <= N .and. ty <= N) then
+        print*, "Back to device memory"
+        print*, "a_s(", tx, ",", ty, ")=", a_s(tx,ty) 
         a(tx,ty)=a_s(tx,ty)
       endif
 
