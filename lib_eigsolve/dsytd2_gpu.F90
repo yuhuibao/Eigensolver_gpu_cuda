@@ -10,9 +10,10 @@ module dsytd2_gpu
       real(8),shared    :: a_s_1(32,32)
       real(8),shared    :: alpha
       real(8),shared    :: taui
+      real(8),shared    :: x
       real(8)           :: beta
       real(8)           :: alphar
-      real(8)           :: xnorm,x,y,z,w
+      real(8)           :: xnorm,y,z,w
       real(8)           :: wc
       integer, value    :: n
       integer           :: tx,ty,tl,i,j,ii,stride
@@ -68,20 +69,6 @@ module dsytd2_gpu
           call syncthreads()
         end do
 
-        ! if(tl <= 32) then
-        !   stride=2
-        !   do while (stride<=32)
-        !     if (mod(tl-1, stride) == 0) then
-        !       a_s_1(tl,i+1) = a_s_1(tl,i+1) + a_s_1(tl+stride/2, i+1)
-        !     end if
-        !     call syncthreads()
-        !     stride = 2*stride
-        !   end do
-        ! end if
-        ! call syncthreads()
-
-        print*, "75: taui when tx=",tx,",ty=",ty, taui
-
         if(tl==1) then
           w = a_s_1(tl,i+1)
           print*, "w= ",w
@@ -111,10 +98,7 @@ module dsytd2_gpu
 
           end if
         end if
-
         call syncthreads()
-
-        print*, "109: taui when tx=",tx,",ty=",ty, taui
 
         ! dscal
         if (tl<i) then
@@ -130,8 +114,6 @@ module dsytd2_gpu
 
           e(i)=alpha
         end if
-
-        print*, "121: taui when tx=",tx,",ty=",ty, taui
 
         if(taui.ne.(0.d0,0.d0)) then
           a_s(i,i+1)=1.d0
@@ -156,18 +138,32 @@ module dsytd2_gpu
           end if
           call syncthreads() 
 
-          if (tl <=32) then
-            stride=2
-            do while(stride<=32)
-              if (mod(tl-1,stride) == 0) then
+          stride = 2
+          do while(stride <= 32)
+            if (tl <= 32 .and. mod(tl-1,stride) == 0)  then
                 a_s_1(tl,i+1) =a_s_1(tl,i+1) + a_s_1(tl+stride/2,i+1) 
-              endif
-              call syncthreads()
-              stride = stride*2
-            end do
+            end if
+            stride = stride * 2
+            call syncthreads()
+          end do
+
+          if (tl <= 32) then
             x = a_s_1(1,i+1)
-            !print*,x
           end if
+          print*, "152: x=", x
+
+          ! if (tl <=32) then
+          !   stride=2
+          !   do while(stride<=32)
+          !     if (mod(tl-1,stride) == 0) then
+          !       a_s_1(tl,i+1) =a_s_1(tl,i+1) + a_s_1(tl+stride/2,i+1) 
+          !     endif
+          !     call syncthreads()
+          !     stride = stride*2
+          !   end do
+          !   x = a_s_1(1,i+1)
+          !   !print*,x
+          ! end if
             ! z=__shfl_xor(x,1)
             ! x=x+z
             ! z=__shfl_xor(x,2)
@@ -188,7 +184,7 @@ module dsytd2_gpu
 
           if (tl <=i) then
             tau(tl)=tau(tl)+x*a_s(tl,i+1)
-            !print*,tau(tl)
+            print*, "187: tau(tl)=", tau(tl)
           end if
 
           if(tl==1) alpha=x
@@ -199,7 +195,8 @@ module dsytd2_gpu
           if(tx<=i .and. ty<=i) then
             print*, "check:", tx, ty, a_s(tx,ty)
             ! a_s(tx,i+1),tau(ty),a_s(ty,i+1),tau(tx)
-            ! a_s(tx,ty)=a_s(tx,ty)-a_s(tx,i+1)*tau(ty)-a_s(ty,i+1)*tau(tx)
+
+            a_s(tx,ty)=a_s(tx,ty)-a_s(tx,i+1)*tau(ty)-a_s(ty,i+1)*tau(tx)
           end if
           call syncthreads()
 
