@@ -5,6 +5,6 @@ cd lib_eigsolve
 make
 cd ../test_driver
 make clean
-make test_dsytrd
+make
 ./test_dsytrd
 cd ..

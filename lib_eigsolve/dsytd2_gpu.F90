@@ -147,7 +147,8 @@ module dsytd2_gpu
             call syncthreads()
           end do
 
-          if (tl <= 32) then
+          ! if (tl <= 32) then
+          if (tl == 1) then
             x = a_s_1(1,i+1)
           end if
           print*, "152: x=", x

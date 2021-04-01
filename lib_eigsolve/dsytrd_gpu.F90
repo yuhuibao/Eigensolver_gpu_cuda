@@ -37,11 +37,14 @@ module dsytrd_gpu
       integer                                   :: N, lda, lwork, nb, nx, ldwork, istat
       integer                                   :: i, j, k, kk
       real(8), dimension(1:N), device           :: d
+      real(8), dimension(1:N)                   :: d_h
       real(8), dimension(1:N-1), device         :: e
+      real(8), dimension(1:N-1)                 :: e_h
       real(8), dimension(1:lwork), device       :: work
       real(8), dimension(1:lda, 1:N), device    :: A
       real(8), dimension(1:lda, 1:N)            :: A_h
       real(8), dimension(1:N-1), device         :: tau
+      real(8), dimension(1:N-1)                 :: tau_h
       real(8), parameter                        :: one = 1.0_8
       type(dim3)                                :: threads
 
@@ -99,6 +102,12 @@ module dsytrd_gpu
       A_h = A
       call print_matrix(A_h)
 
+      d_h = d
+      e_h = e
+      tau_h = tau
+      call print_vector(d_h)
+      call print_vector(e_h)
+      call print_vector(tau_h)
       ! Copy superdiagonal back into A, store diagonal in d
       !$cuf kernel do(1) <<<*,*>>>
       do j = 33, N
