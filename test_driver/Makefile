@@ -27,7 +27,7 @@ LIBS += ../lib_eigsolve/lib_eigsolve.a
 #LIBS += -L${MAGMAROOT}/lib -lmagma
 #OPTFLAGS += -DHAVE_MAGMA
 
-all: test_dsytrd
+all: test_dsyevd
 
 test_zhegvdx: test_zhegvdx.F90 
 	pgcc -c wallclock.c
@@ -43,6 +43,11 @@ test_dsytrd: test_dsytrd.F90
 	pgcc -c wallclock.c
 	pgf90 -c ${FLAGS} toolbox.F90
 	pgf90 -o $@ test_dsytrd.F90 toolbox.o wallclock.o ${LIBS} ${FLAGS} ${OPTFLAGS} -pgf90libs ${INCS}
+
+test_dsyevd: test_dsyevd.F90 
+	pgcc -c wallclock.c
+	pgf90 -c ${FLAGS} toolbox.F90
+	pgf90 -o $@ test_dsyevd.F90 toolbox.o wallclock.o ${LIBS} ${FLAGS} ${OPTFLAGS} -pgf90libs ${INCS}
 
 clean:
 	rm test_zhegvdx test_dsygvdx test_dsytrd *.mod *.o

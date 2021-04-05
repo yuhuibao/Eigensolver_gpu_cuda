@@ -151,7 +151,7 @@ module dsytd2_gpu
           if (tl == 1) then
             x = a_s_1(1,i+1)
           end if
-          print*, "152: x=", x
+          ! print*, "152: x=", x
 
           ! if (tl <=32) then
           !   stride=2
@@ -188,11 +188,11 @@ module dsytd2_gpu
             print*, "187: tau(tl)=", tau(tl)
           end if
 
-          if(tl==1) alpha=x
+          !if(tl==1) alpha=x
 
           call syncthreads()
 
-          print*, "Before Check i=", i
+          ! print*, "Before Check i=", i
           if(tx<=i .and. ty<=i) then
             print*, "check:", tx, ty, a_s(tx,ty)
             ! a_s(tx,i+1),tau(ty),a_s(ty,i+1),tau(tx)

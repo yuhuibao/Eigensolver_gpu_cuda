@@ -22,8 +22,10 @@ module utils
   subroutine print_vector(A)
     real(8),dimension(:) :: A
     do j = 1,size(A)
-      print*, " ",A(j)
+      write(*, fmt='(1X, A, F0.2)', advance="no") " ", a(j)
+      print*,"Hiiii"
     end do
-  end subroutine
+    print*, ""
+  end subroutine 
 
 end module utils

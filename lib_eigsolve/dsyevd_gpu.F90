@@ -24,6 +24,7 @@
 module dsyevd_gpu
   use cudafor
   use cublas
+  use utils
   implicit none
 
  contains
@@ -104,6 +105,9 @@ module dsyevd_gpu
       endif
       call nvtxEndRange
 
+      print*,"after dstedc result:"
+      call print_matrix(Z_h)
+      call print_vector(w_h)
       ! Copy eigenvectors and eigenvalues to GPU
       istat = cudaMemcpy2D(Z(1, 1), ldz, Z_h, ldz_h, N, NZ)
       w(1:N) = w_h(1:N)
