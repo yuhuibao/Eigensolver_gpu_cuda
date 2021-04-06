@@ -123,33 +123,33 @@ program main
     call create_random_symmetric_pd(Bref, N)
     
 
-  elseif (i ==2) then
-    print*, "Reading  matrices from files ..."
-    print*, "Unformatted files with n,m,lda "
-    print*, "A(lda,n) B(lda,n)"
-    call get_command_argument(1, arg)
-    file1=trim(arg)
-    call get_command_argument(2, arg)
-    file2=trim(arg)
-    open(UNIT=13, FILE=file1, ACTION="read")
-    open(UNIT=14, FILE=file2, ACTION="read")
-    read(13,*) n1,m1,lda1
-    read(14,*) n2,m2,lda2
-    print *,n1,m1,lda1,n2,m2,lda2
-    if( n1/=n2 .or. m1/=m2 .or. lda1 /= lda2) then
-      print *,"expecting A and B to have same N,M,LDA"
-      call exit
-    end if
-    N=n1
-    M=m1
-    LDA=lda1
-    print *,"n,m,lda from files:",n,m,lda
-    allocate(Aref(n,m))
-    allocate(Bref(n,m))
-    read(13,*)Aref(1:n,1:n)
-    read(14,*)Bref(1:n,1:n)
-    close(13)
-    close(14)
+  ! elseif (i ==2) then
+  !   print*, "Reading  matrices from files ..."
+  !   print*, "Unformatted files with n,m,lda "
+  !   print*, "A(lda,n) B(lda,n)"
+  !   call get_command_argument(1, arg)
+  !   file1=trim(arg)
+  !   call get_command_argument(2, arg)
+  !   file2=trim(arg)
+  !   open(UNIT=13, FILE=file1, ACTION="read")
+  !   open(UNIT=14, FILE=file2, ACTION="read")
+  !   read(13,*) n1,m1,lda1
+  !   read(14,*) n2,m2,lda2
+  !   print *,n1,m1,lda1,n2,m2,lda2
+  !   if( n1/=n2 .or. m1/=m2 .or. lda1 /= lda2) then
+  !     print *,"expecting A and B to have same N,M,LDA"
+  !     call exit
+  !   end if
+  !   N=n1
+  !   M=m1
+  !   LDA=lda1
+  !   print *,"n,m,lda from files:",n,m,lda
+  !   allocate(Aref(n,m))
+  !   allocate(Bref(n,m))
+  !   read(13,*)Aref(1:n,1:n)
+  !   read(14,*)Bref(1:n,1:n)
+  !   close(13)
+  !   close(14)
     !call print_matrix(Aref)
     !call print_matrix(Bref)
 

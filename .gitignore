@@ -1,0 +1,8 @@
+*.o
+*.mod
+*.a
+*.txt
+test_driver/test_dsytrd
+test_driver/test_dsyevd
+test_driver/test_dsygvdx
+test_driver/test_zhegvdx
