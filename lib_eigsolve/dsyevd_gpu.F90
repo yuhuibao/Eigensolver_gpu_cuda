@@ -45,6 +45,7 @@ module dsyevd_gpu
       integer, dimension(1:liwork_h)              :: iwork_h
 
       real(8), dimension(1:lda, 1:N), device      :: A
+      real(8), dimension(1:lda, 1:N)              :: A_h
       real(8), dimension(1:lda, 1:N), device      :: Z
       real(8), dimension(1:ldz_h, 1:N), pinned    :: Z_h
       real(8), dimension(1:N), device             :: w
@@ -130,6 +131,12 @@ module dsyevd_gpu
         ! Apply reflector to eigenvectors in stream 2
         call dlarfb_gpu(mi, NZ, ib, A(1,2+i-1), lda, work(indwrk), ldt, Z, ldz, work(indwk3), N, work(indwk2), ldt)
       end do
+      ! istat = cudaDeviceSynchronize()
+      ! if (istat /= 0) then
+      !   print*,"synchronize fails"
+      ! end if
+      Z_h=Z
+      call print_matrix(Z_h)
 
       call nvtxEndRange
 
@@ -141,14 +148,19 @@ module dsyevd_gpu
       implicit none
       integer                               :: N, K, ldv, ldt, ldw
       real(8), dimension(ldv, K), device    :: V
+      real(8), dimension(ldv, K)            :: V_h
       real(8), dimension(K), device         :: tau
       real(8), dimension(ldt, K), device    :: T
+      real(8), dimension(ldt, K)            :: T_h
       real(8), dimension(ldw, K), device    :: W
 
       integer                               :: i, j, istat
       type(dim3)                            :: threads
 
       istat = cublasSetStream(cuHandle, stream1)
+      print*,"N = ",N,"K = ",K
+      V_h = V
+      !call print_matrix(V_h)
 
       ! Prepare lower triangular part of block column for dsyrk call. 
       ! Requires zeros in lower triangular portion and ones on diagonal.
@@ -165,15 +177,23 @@ module dsyevd_gpu
         end do
       end do
 
+      V_h = V
+      !call print_matrix(V_h)
+
       istat = cudaEventRecord(event1, stream1)
       istat = cudaStreamWaitEvent(stream1, event2, 0)
 
       ! Form preliminary T matrix
       istat = cublasdsyrk_v2(cuHandle, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, K, N, 1.0_8, V, ldv, 0.0_8, T, ldt)
 
+      T_h = T
+      !call print_matrix(T_h)
       ! Finish forming T 
       threads = dim3(64, 16, 1)
       call finish_T_block_kernel<<<1, threads, 0, stream1>>>(K, T, ldt, tau)
+
+      T_h = T
+      !call print_matrix(T_h)
 
     end subroutine dlarft_gpu
 

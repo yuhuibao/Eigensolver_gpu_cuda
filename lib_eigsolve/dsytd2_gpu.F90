@@ -71,7 +71,7 @@ module dsytd2_gpu
 
         if(tl==1) then
           w = a_s_1(tl,i+1)
-          print*, "w= ",w
+          !print*, "w= ",w
           alpha=a_s(i,i+1)
           alphar=dble(alpha)
           xnorm=dsqrt(w)
@@ -123,7 +123,7 @@ module dsytd2_gpu
             do j=1,i
               tau(tl)=tau(tl)+taui*a_s(tl,j)*a_s(j,i+1)
             end do
-            print*, "tau(tl)=", tau(tl)
+            !print*, "tau(tl)=", tau(tl)
           end if
 
           call syncthreads()
@@ -131,7 +131,7 @@ module dsytd2_gpu
           if (tl <=32) then
             if (tl <=i) then
               a_s_1(tl,i+1)=-.5d0*taui*tau(tl)*a_s(tl,i+1)
-              print*,a_s_1(tl,i+1)
+              !print*,a_s_1(tl,i+1)
             else
               a_s_1(tl,i+1)=0._8
             endif
@@ -185,7 +185,7 @@ module dsytd2_gpu
 
           if (tl <=i) then
             tau(tl)=tau(tl)+x*a_s(tl,i+1)
-            print*, "187: tau(tl)=", tau(tl)
+            !print*, "187: tau(tl)=", tau(tl)
           end if
 
           !if(tl==1) alpha=x
@@ -194,7 +194,7 @@ module dsytd2_gpu
 
           ! print*, "Before Check i=", i
           if(tx<=i .and. ty<=i) then
-            print*, "check:", tx, ty, a_s(tx,ty)
+            !print*, "check:", tx, ty, a_s(tx,ty)
             ! a_s(tx,i+1),tau(ty),a_s(ty,i+1),tau(tx)
 
             a_s(tx,ty)=a_s(tx,ty)-a_s(tx,i+1)*tau(ty)-a_s(ty,i+1)*tau(tx)
@@ -221,8 +221,8 @@ module dsytd2_gpu
 
       ! Back to device memory
       if (tx <= N .and. ty <= N) then
-        print*, "Back to device memory"
-        print*, "a_s(", tx, ",", ty, ")=", a_s(tx,ty) 
+        !print*, "Back to device memory"
+        !print*, "a_s(", tx, ",", ty, ")=", a_s(tx,ty) 
         a(tx,ty)=a_s(tx,ty)
       endif
 

@@ -105,8 +105,8 @@ module dsytrd_gpu
       d_h = d
       e_h = e
       tau_h = tau
-      call print_vector(d_h)
-      call print_vector(e_h)
+      !call print_vector(d_h)
+      !call print_vector(e_h)
       call print_vector(tau_h)
       ! Copy superdiagonal back into A, store diagonal in d
       !$cuf kernel do(1) <<<*,*>>>

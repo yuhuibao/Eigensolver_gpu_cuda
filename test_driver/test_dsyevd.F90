@@ -12,7 +12,7 @@ program main
     integer, dimension(:), allocatable              :: iwork_h
 
     N = 3
-    lwork = 6*N
+    lwork = 1 + 6*N + 2*N*N
     liwork_h = 10*N
     iu = n
     il = 1
@@ -81,6 +81,9 @@ program main
     allocate(w, source=w_h)
     allocate(iwork_h(liwork_h))
 
-    call dsyevd_gpu('V', 'U', il, iu, N, A, N, Z, N, w, work, lwork, &
-    work_h, lwork, iwork_h, liwork_h, Z_h, N, w_h, info)
+    !call dsyevd_gpu('V', 'U', il, iu, N, A, N, Z, N, w, work, lwork, &
+    !work_h, lwork, iwork_h, liwork_h, Z_h, N, w_h, info)
+    call dsyevd('V', 'U', N, A_h, N, w_h, work_h, lwork, &
+    iwork_h, liwork_h, info)
+    call print_matrix(A_h)
 end program
